@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Tuple
 
 
 def print_grid(grid: List[List[str]]):
@@ -8,7 +8,7 @@ def print_grid(grid: List[List[str]]):
         print(frmt.format(*row))
 
 
-def generate_random_puzzle() -> List[List[str]]:
+def generate_random_puzzle() -> Tuple[List[List[str]], List[List[str]]]:
     wall = "X"
     passage = "*"
 
@@ -30,7 +30,11 @@ def generate_random_puzzle() -> List[List[str]]:
         grid.append(current_row)
     grid.append(last_row)
 
-    return grid
+    random.shuffle(puzzle)
+    return (grid, puzzle)
 
 
-print_grid(generate_random_puzzle())
+(puzzle, solution) = generate_random_puzzle()
+
+print_grid(puzzle)
+print(solution)
