@@ -167,7 +167,8 @@ class Puzzle:
             print(frmt.format(*row))
 
     def generate(self):
-        puzzle = list(range(16))
+        puzzle = list(range(4))
+        puzzle = puzzle * 4
         random.shuffle(puzzle)
 
         first_row = []
@@ -202,7 +203,7 @@ class Puzzle:
         self.grid.append(last_row)
 
         random.shuffle(puzzle)
-        self.solution = puzzle
+        self.solution = [puzzle[x:x+4] for x in range(0, len(puzzle), 4)]
 
     @property
     def current_state(self) -> List[int]:
@@ -211,23 +212,31 @@ class Puzzle:
         First and last rows can be dropped as they are only walls
         """
         state = list()
-        row_count = len(self.grid)
-        for i in range(1, row_count-1):
-            column_count = len(self.grid[i])
-            for j in range(1, column_count-1):
-                if self.grid[i][j] != "X":
-                    state.append(self.grid[i][j])
+        rows = len(self.grid)
+        columns = len(self.grid[0])
+        for i in range(1, columns - 1):
+            col_state = []
+            for j in range(1, rows - 1):
+                if self.grid[j][i].value != "X":
+                    col_state.append(self.grid[j][i].value)
+            if len(col_state) > 0:
+                state.append(col_state)
         return state
 
 
-p = Puzzle()
-p.display()
-print("=================================")
-p.bring_to_top(3, 4)
-p.display()
-print("=================================")
-p.bring_to_top(1, 4)
-p.display()
-print("=================================")
-p.swap_tops(3, 5)
-p.display()
+# p = Puzzle()
+# p.display()
+
+# print("=================================")
+# p.bring_to_top(3, 4)
+# p.display()
+
+# print("=================================")
+# p.bring_to_top(1, 4)
+# p.display()
+
+# print("=================================")
+# p.swap_tops(3, 5)
+# p.display()
+# print("=================================")
+# print(p.current_state)
