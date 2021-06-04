@@ -160,6 +160,70 @@ class Puzzle:
 
         self.move_down(tile_a)
 
+    def swap_one_down(self, el1, el2):
+        tile_a = self.grid[el1[0]][el1[1]]
+        tile_b = self.grid[el2[0]][el2[1]]
+
+        tiles_displaced = []
+        while not self.can_move_up(tile_a):
+            row_i = tile_a.location[0]
+            col_i = tile_a.location[1]
+
+            if col_i < 4:
+                for i in range(row_i-1):
+                    tile_on_top = self.grid[i+1][col_i]
+                    tiles_displaced.append(tile_on_top)
+                    for k in range(i+1):
+                        self.move_up(tile_on_top)
+
+                    for j in range(8-col_i-i):
+                        self.move_right(tile_on_top)
+            else:
+                for i in range(row_i-1):
+                    tile_on_top = self.grid[i+1][col_i]
+                    for k in range(i+1):
+                        self.move_up(tile_on_top)
+
+                    for j in range(8-col_i-i):
+                        self.move_left(tile_on_top)
+                    tiles_displaced.append(tile_on_top)
+
+        for i in range(tile_a.location[0]):
+            self.move_up(tile_a)
+        self.move_left(tile_a)
+
+        for i in range(tile_b.location[0]):
+            self.move_up(tile_b)
+        self.move_right(tile_b)
+
+        self.move_right(tile_a)
+        while self.can_move_down(tile_a):
+            self.move_down(tile_a)
+
+        self.move_left(tile_b)
+        while self.can_move_down(tile_b):
+            self.move_down(tile_b)
+
+        top_tile = tile_b
+        for i in range(len(tiles_displaced) - 1, -1, -1):
+            col_i = tile_b.location[1]
+            row_i = top_tile.location[0]
+            tile = tiles_displaced[i]
+            while col_i != tile.location[1]:
+                self.move_left(tile)
+
+            while row_i - 1 != tile.location[0]:
+                self.move_down(tile)
+            top_tile = tile
+
+    def can_move_down(self, tile: Tile) -> bool:
+        tile_below = self.grid[tile.location[0]+1][tile.location[1]]
+        return tile_below.value == self.passage
+
+    def can_move_up(self, tile: Tile) -> bool:
+        tile_above = self.grid[tile.location[0]-1][tile.location[1]]
+        return tile_above.value == self.passage
+
     def display(self):
         l = [[tile.value for tile in row] for row in self.grid]
         for row in l:
@@ -224,12 +288,12 @@ class Puzzle:
         return state
 
 
-# p = Puzzle()
-# p.display()
-
-# print("=================================")
-# p.bring_to_top(3, 4)
-# p.display()
+p = Puzzle()
+p.display()
+print("=================================")
+p.swap_one_down([3, 3], [4, 3])
+p.swap_one_down([1, 1], [2, 1])
+p.display()
 
 # print("=================================")
 # p.bring_to_top(1, 4)
