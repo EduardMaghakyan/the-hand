@@ -75,11 +75,15 @@ class Puzzle:
             print("Can't move down, we need to do something!")
 
     def move_right(self, cell_to_move: Tile):
-        tile_right = self.grid[cell_to_move.location[0]
-                               ][cell_to_move.location[1]+1]
+        tile_right_row = self.grid[cell_to_move.location[0]]
+        if len(tile_right_row) == cell_to_move.location[1] + 1:
+            tile_right = tile_right_row[cell_to_move.location[1]]
+        else:
+            tile_right = tile_right_row[cell_to_move.location[1]+1]
+
         new_location = tile_right.location
         old_location = cell_to_move.location
-        if self.passage == tile_right.value:
+        if self.can_move_right(cell_to_move):
             self.grid[tile_right.location[0]
                       ][tile_right.location[1]] = cell_to_move
             self.grid[cell_to_move.location[0]
@@ -90,27 +94,27 @@ class Puzzle:
             # think about how clean
             print("Can't move right, we need to do something!")
 
-    def bring_to_top(self, col_i, row_i):
-        cell = self.grid[row_i][col_i]
+    def bring_to_top(self, cell: Tile):
+        row_i = cell.location[0]
+        col_i = cell.location[1]
         if col_i < 4:
             for i in range(row_i-1):
                 top = self.grid[i+1][col_i]
-                for k in range(i+1):
+                while self.can_move_up(top):
                     self.move_up(top)
 
-                for j in range(8-col_i-i):
+                while self.can_move_right(top):
                     self.move_right(top)
 
-            tile = self.grid[row_i][col_i]
-            for i in range(row_i):
-                self.move_up(tile)
-            self.move_left(tile)
+            while self.can_move_up(cell):
+                self.move_up(cell)
+            self.move_left(cell)
 
             for i in range(row_i):
                 tile = self.grid[0][9-row_i+i]
-                for j in range(tile.location[1] - col_i):
+                while self.can_move_left(tile):
                     self.move_left(tile)
-                for k in range((row_i+1) - i):
+                while self.can_move_down(tile):
                     self.move_down(tile)
 
             self.move_right(cell)
@@ -118,22 +122,21 @@ class Puzzle:
         else:
             for i in range(row_i-1):
                 top = self.grid[i+1][col_i]
-                for k in range(i+1):
+                while self.can_move_up(top):
                     self.move_up(top)
 
-                for j in range(8-col_i-i):
+                while self.can_move_left(top):
                     self.move_left(top)
 
-            tile = self.grid[row_i][col_i]
-            for i in range(row_i):
-                self.move_up(tile)
-            self.move_right(tile)
+            while self.can_move_up(cell):
+                self.move_up(cell)
+            self.move_right(cell)
 
             for i in range(row_i-1):
-                tile = self.grid[0][9-col_i+i]
-                for j in range(tile.location[1] - col_i):
+                tile = self.grid[0][row_i - i - 2]
+                while self.can_move_right(tile):
                     self.move_right(tile)
-                for k in range(row_i - i):
+                while self.can_move_down(tile):
                     self.move_down(tile)
 
             self.move_left(cell)
@@ -141,8 +144,12 @@ class Puzzle:
 
     def swap_tops(self, col_i: int, col_j: int) -> None:
         # for top cells row=1
-        tile_a = self.grid[1][col_i]
-        tile_b = self.grid[1][col_j]
+        if col_i > col_j:
+            tile_a = self.grid[1][col_j]
+            tile_b = self.grid[1][col_i]
+        else:
+            tile_a = self.grid[1][col_i]
+            tile_b = self.grid[1][col_j]
         self.move_up(tile_a)
 
         for i in range(col_i):
@@ -160,10 +167,7 @@ class Puzzle:
 
         self.move_down(tile_a)
 
-    def swap_one_down(self, el1, el2):
-        tile_a = self.grid[el1[0]][el1[1]]
-        tile_b = self.grid[el2[0]][el2[1]]
-
+    def swap_one_down(self, tile_a, tile_b):
         tiles_displaced = []
         while not self.can_move_up(tile_a):
             row_i = tile_a.location[0]
@@ -173,26 +177,26 @@ class Puzzle:
                 for i in range(row_i-1):
                     tile_on_top = self.grid[i+1][col_i]
                     tiles_displaced.append(tile_on_top)
-                    for k in range(i+1):
+                    while self.can_move_up(tile_on_top):
                         self.move_up(tile_on_top)
 
-                    for j in range(8-col_i-i):
+                    while self.can_move_right(tile_on_top):
                         self.move_right(tile_on_top)
             else:
                 for i in range(row_i-1):
                     tile_on_top = self.grid[i+1][col_i]
-                    for k in range(i+1):
+                    while self.can_move_up(tile_on_top):
                         self.move_up(tile_on_top)
 
-                    for j in range(8-col_i-i):
+                    while self.can_move_left(tile_on_top):
                         self.move_left(tile_on_top)
                     tiles_displaced.append(tile_on_top)
 
-        for i in range(tile_a.location[0]):
+        while self.can_move_up(tile_a):
             self.move_up(tile_a)
         self.move_left(tile_a)
 
-        for i in range(tile_b.location[0]):
+        while self.can_move_up(tile_b):
             self.move_up(tile_b)
         self.move_right(tile_b)
 
@@ -217,12 +221,27 @@ class Puzzle:
             top_tile = tile
 
     def can_move_down(self, tile: Tile) -> bool:
-        tile_below = self.grid[tile.location[0]+1][tile.location[1]]
+        if len(self.grid) == tile.location[0] + 1:
+            tile_below = self.grid[tile.location[0]][tile.location[1]]
+        else:
+            tile_below = self.grid[tile.location[0]+1][tile.location[1]]
         return tile_below.value == self.passage
 
     def can_move_up(self, tile: Tile) -> bool:
         tile_above = self.grid[tile.location[0]-1][tile.location[1]]
         return tile_above.value == self.passage
+
+    def can_move_right(self, tile: Tile) -> bool:
+        tile_right_row = self.grid[tile.location[0]]
+        if len(tile_right_row) == tile.location[1] + 1:
+            tile_right = tile_right_row[tile.location[1]]
+        else:
+            tile_right = tile_right_row[tile.location[1]+1]
+        return tile_right.value == self.passage
+
+    def can_move_left(self, tile: Tile) -> bool:
+        tile_left = self.grid[tile.location[0]][max(tile.location[1]-1, 0)]
+        return tile_left.value == self.passage
 
     def display(self):
         l = [[tile.value for tile in row] for row in self.grid]
@@ -265,14 +284,13 @@ class Puzzle:
                 current_row.append(wall)
             self.grid.append(current_row)
         self.grid.append(last_row)
-
         random.shuffle(puzzle)
         self.solution = [puzzle[x:x+4] for x in range(0, len(puzzle), 4)]
 
     @property
     def current_state(self) -> List[int]:
         """Take the grid(puzzle)
-        Return current state row-by-row
+        Return current state column-by-column
         First and last rows can be dropped as they are only walls
         """
         state = list()
@@ -287,17 +305,27 @@ class Puzzle:
                 state.append(col_state)
         return state
 
+    def is_solved(self) -> bool:
+        return self.solution == self.current_state
+
+    def find(self, value_to_find, start_row):
+        for i in range(start_row+1, -1, -1):
+            for j in range(len(self.grid[i])):
+                if self.grid[i][j].value == value_to_find:
+                    return self.grid[i][j]
+
 
 p = Puzzle()
+# print(p.current_state)
 p.display()
-print("=================================")
-p.swap_one_down([3, 3], [4, 3])
-p.swap_one_down([1, 1], [2, 1])
-p.display()
-
 # print("=================================")
-# p.bring_to_top(1, 4)
+# p.swap_one_down([3, 3], [4, 3])
+# p.swap_one_down([1, 1], [2, 1])
 # p.display()
+
+print("=================================")
+p.bring_to_top(p.grid[4][7])
+p.display()
 
 # print("=================================")
 # p.swap_tops(3, 5)
