@@ -28,6 +28,7 @@ passage_color = (255, 255, 255)
 pygame.init()
 pygame.display.set_caption('Sort IT!')
 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, id, color, x=None, y=None, width=0, height=0):
         super().__init__()
@@ -55,8 +56,10 @@ class Player(pygame.sprite.Sprite):
     def update(self, walls, tiles):
         prev_rect = self.rect.copy()
         self.rect.move_ip(*self.velocity)
-        collide_walls = pygame.sprite.spritecollide(self, walls, False, pygame.sprite.collide_rect_ratio(0.9))
-        collide_tiles = pygame.sprite.spritecollide(self, tiles, False, pygame.sprite.collide_circle_ratio(0.7))
+        collide_walls = pygame.sprite.spritecollide(
+            self, walls, False, pygame.sprite.collide_rect_ratio(0.9))
+        collide_tiles = pygame.sprite.spritecollide(
+            self, tiles, False, pygame.sprite.collide_circle_ratio(0.7))
         if len(collide_tiles) > 1 or collide_walls:
             self.rect = prev_rect
 
@@ -75,7 +78,6 @@ class Tile(pygame.sprite.Sprite):
         self.player = None
         self.redraw()
 
-
     @property
     def y(self):
         return self.rect.y
@@ -93,81 +95,9 @@ class Tile(pygame.sprite.Sprite):
 
     def redraw(self):
         self.image.fill(self.color)
-        pygame.draw.rect(self.image, self.color, Rect(0, 0, self.width, self.height))
+        pygame.draw.rect(self.image, self.color, Rect(
+            0, 0, self.width, self.height))
 
-# define all puzzle tiles
-puzzle_tiles = []
-for row in range(HEIGHT_FACTOR):
-    puzzle_tiles.append([])
-    for col in range(WIDTH_FACTOR):
-        puzzle_tiles[row].append(Tile(wall_color, x=(col * TILE_H), y=(row * TILE_W), width=TILE_W, height=TILE_H))
-
-# define moving pieces
-players = []
-id = 0
-for color in [RED, BLUE, GREEN, YELLOW]:
-    for i in range(4):
-        players.append(Player(id, color=color, x=0, y=0, width=TILE_W, height=TILE_H))
-        id += 1
-
-random.shuffle(players)
-
-# add walls
-for col in range(1, WIDTH_FACTOR-1):
-    puzzle_tiles[1][col].open = True
-    puzzle_tiles[1][col].color = passage_color
-    puzzle_tiles[1][col].redraw()
-
-for row in range(1, HEIGHT_FACTOR-1):
-    for col in range(1, WIDTH_FACTOR-1):
-        if col % 2 == 0:
-            puzzle_tiles[row][col].open = True
-            puzzle_tiles[row][col].color = passage_color
-            puzzle_tiles[row][col].redraw()
-
-# add players to cell
-for row in range(2, HEIGHT_FACTOR-1):
-    for col in range(WIDTH_FACTOR):
-        if col % 2 != 0:
-            continue
-        cell = puzzle_tiles[row][col]
-        if cell.open:
-            cell.player = players.pop()
-            cell.player.set_x(cell.x)
-            cell.player.set_y(cell.y)
-
-# get set of moves
-def get_possible_moves(puzzle_tiles):
-    possible_moves = []
-    for row in range(HEIGHT_FACTOR):
-        for col in range(WIDTH_FACTOR):
-            cell = puzzle_tiles[row][col]
-            if cell.has_player:
-                moves = []
-                if row - 1 >= 0 and puzzle_tiles[row - 1][col].is_open():
-                    moves.append('N')
-                if row < HEIGHT_FACTOR and puzzle_tiles[row + 1][col].is_open():
-                    moves.append('S')
-                if col - 1 >= 0 and puzzle_tiles[row][col - 1].is_open():
-                    moves.append('W')
-                if col < WIDTH_FACTOR and  puzzle_tiles[row][col + 1].is_open():
-                    moves.append('E')
-                if len(moves) > 0:
-                    possible_moves.append((cell.player.id, moves))
-    return possible_moves
-
-walls = pygame.sprite.Group()
-passage = pygame.sprite.Group()
-play_tiles = pygame.sprite.Group()
-for row in range(len(puzzle_tiles)):
-    for col in range(len(puzzle_tiles[row])):
-        tile = puzzle_tiles[row][col]
-        if puzzle_tiles[row][col].player:
-            play_tiles.add(puzzle_tiles[row][col].player)
-        if tile.open:
-            passage.add(tile)
-        else:
-            walls.add(tile)
 
 class SortingPuzzle:
 
@@ -175,13 +105,71 @@ class SortingPuzzle:
         self.screen_size = (WIDTH_FACTOR * TILE_W, HEIGHT_FACTOR * TILE_H)
         self.screen = pygame.display.set_mode(self.screen_size)
         self.move_happened = False
-        self._draw_puzzle()
+        self.puzzle_tiles = []
+        self.walls = pygame.sprite.Group()
+        self.passage = pygame.sprite.Group()
+        self.play_tiles = pygame.sprite.Group()
+        self._generate_puzzle()
+        self.draw()
 
-    def _draw_puzzle(self):
-        walls.draw(self.screen)
-        passage.draw(self.screen)
-        play_tiles.draw(self.screen)
-        
+    def _generate_puzzle(self):
+        # define all puzzle tiles
+        for row in range(HEIGHT_FACTOR):
+            self.puzzle_tiles.append([])
+            for col in range(WIDTH_FACTOR):
+                self.puzzle_tiles[row].append(Tile(wall_color, x=(
+                    col * TILE_H), y=(row * TILE_W), width=TILE_W, height=TILE_H))
+
+        # define moving pieces
+        players = []
+        id = 0
+        for color in [RED, BLUE, GREEN, YELLOW]:
+            for _ in range(4):
+                players.append(Player(id, color=color, x=0, y=0,
+                                      width=TILE_W, height=TILE_H))
+                id += 1
+        random.shuffle(players)
+
+        # add passages
+        for col in range(1, WIDTH_FACTOR-1):
+            self.puzzle_tiles[1][col].open = True
+            self.puzzle_tiles[1][col].color = passage_color
+            self.puzzle_tiles[1][col].redraw()
+
+        for row in range(1, HEIGHT_FACTOR-1):
+            for col in range(1, WIDTH_FACTOR-1):
+                if col % 2 == 0:
+                    self.puzzle_tiles[row][col].open = True
+                    self.puzzle_tiles[row][col].color = passage_color
+                    self.puzzle_tiles[row][col].redraw()
+
+        # assign players to cells
+        for row in range(2, HEIGHT_FACTOR-1):
+            for col in range(WIDTH_FACTOR):
+                if col % 2 != 0:
+                    continue
+                cell = self.puzzle_tiles[row][col]
+                if cell.open:
+                    cell.player = players.pop()
+                    cell.player.set_x(cell.x)
+                    cell.player.set_y(cell.y)
+
+        # update sprite groups
+        for row in range(len(self.puzzle_tiles)):
+            for col in range(len(self.puzzle_tiles[row])):
+                tile = self.puzzle_tiles[row][col]
+                if self.puzzle_tiles[row][col].player:
+                    self.play_tiles.add(self.puzzle_tiles[row][col].player)
+                if tile.open:
+                    self.passage.add(tile)
+                else:
+                    self.walls.add(tile)
+
+    def draw(self):
+        self.walls.draw(self.screen)
+        self.passage.draw(self.screen)
+        self.play_tiles.draw(self.screen)
+
         pygame.display.update()
 
     def move(self, player, direction):
@@ -191,15 +179,32 @@ class SortingPuzzle:
         else:
             player.velocity[0] = velocity
 
-        player.update(walls, play_tiles)
-        for p in passage:
+        player.update(self.walls, self.play_tiles)
+        for p in self.passage:
             p.player = None
-            hits = pygame.sprite.spritecollide(p, play_tiles, False)
+            hits = pygame.sprite.spritecollide(p, self.play_tiles, False)
             for hit in hits:
                 p.player = hit
-    
-    def action_space(self, puzzle_tiles):
-        return get_possible_moves(puzzle_tiles)
+
+    def action_space(self):
+        possible_moves = []
+        for row in range(HEIGHT_FACTOR):
+            for col in range(WIDTH_FACTOR):
+                cell = self.puzzle_tiles[row][col]
+                if cell.has_player:
+                    moves = []
+                    if row - 1 >= 0 and self.puzzle_tiles[row - 1][col].is_open():
+                        moves.append('N')
+                    if row < HEIGHT_FACTOR and self.puzzle_tiles[row + 1][col].is_open():
+                        moves.append('S')
+                    if col - 1 >= 0 and self.puzzle_tiles[row][col - 1].is_open():
+                        moves.append('W')
+                    if col < WIDTH_FACTOR and self.puzzle_tiles[row][col + 1].is_open():
+                        moves.append('E')
+                    if len(moves) > 0:
+                        possible_moves.append((cell.player.id, moves))
+        return possible_moves
+
 
 s = SortingPuzzle()
 done = False
@@ -213,11 +218,11 @@ while not done:
         if event.type == pygame.QUIT:
             done = True
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE: # choose random tile and random move
-                next_move = random.choice(s.action_space(puzzle_tiles))
+            if event.key == pygame.K_SPACE:  # choose random tile and random move
+                next_move = random.choice(s.action_space())
                 player_id = next_move[0]
                 direction = random.choice(next_move[1])
-                player = [p for p in play_tiles if p.id == player_id]
+                player = [p for p in s.play_tiles if p.id == player_id]
                 player = player.pop() if len(player) > 0 else None
             if event.key == pygame.K_w:
                 direction = 'N'
@@ -232,10 +237,10 @@ while not done:
             player.velocity[0] = 0
         elif event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
-            player = [s for s in play_tiles if s.rect.collidepoint(pos)]
+            player = [s for s in s.play_tiles if s.rect.collidepoint(pos)]
             player = player.pop() if len(player) > 0 else None
 
     if player and direction:
         s.move(player, direction)
         direction = None
-    s._draw_puzzle()
+    s.draw()
