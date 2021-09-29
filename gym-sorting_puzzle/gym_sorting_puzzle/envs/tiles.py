@@ -48,7 +48,6 @@ class Tile(pygame.sprite.Sprite):
     def update(self, walls, tiles):
         prev_rect = self.rect.copy()
         self.rect.move_ip(*self.velocity)
-        collide_tiles = False
         collide_walls = pygame.sprite.spritecollide(self, walls, False, pygame.sprite.collide_rect_ratio(0.9))
         collide_tiles = pygame.sprite.spritecollide(self, tiles, False, pygame.sprite.collide_circle_ratio(0.7))
         if len(collide_tiles) > 1 or collide_walls:
