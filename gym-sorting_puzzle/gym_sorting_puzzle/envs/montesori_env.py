@@ -1,9 +1,6 @@
 import pygame
 from pygame import Rect
-import numpy as np
 import random
-import time
-from pygame import surface
 
 from pygame.constants import QUIT
 
