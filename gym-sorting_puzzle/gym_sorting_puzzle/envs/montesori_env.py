@@ -12,6 +12,19 @@ RED = (255, 18, 18)
 BLUE = (18, 164, 255)
 GREEN = (38, 209, 4)
 YELLOW = (242, 231, 24)
+TYPE = {
+    0: RED,
+    1: BLUE,
+    2: GREEN,
+    3: YELLOW,
+}
+
+LABEL = {
+    0: 'RED',
+    1: 'BLUE',
+    2: 'GREEN',
+    3: 'YELLOW',
+}
 
 SPEED = {
     'N': -90,
@@ -27,7 +40,7 @@ pygame.display.set_caption('Sort IT!')
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, id, color, x=None, y=None, width=0, height=0):
+    def __init__(self, id, color, x=None, y=None, width=0, height=0, type=None):
         super().__init__()
         self.width = width
         self.height = height
@@ -40,6 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = y
         self.velocity = [0, 0]
         self.id = id
+        self.type = type
         self.font = pygame.font.SysFont('arialblack', 24)
         self.text_image = self.font.render(str(self.id), True, wall_color)
         self.image.blit(self.text_image, [0, 0])
@@ -106,8 +120,23 @@ class SortingPuzzle:
         self.walls = pygame.sprite.Group()
         self.passage = pygame.sprite.Group()
         self.play_tiles = pygame.sprite.Group()
+        self.expected = []
         self._generate_puzzle()
         self.draw()
+
+    def game_over(self):
+        return self.expected == self._current_state()
+
+    def _solution(self):
+        return self.expected
+
+    def _current_state(self):
+        state = []
+        for row in range(2, HEIGHT_FACTOR-1):
+            for col in range(2, WIDTH_FACTOR-1, 2):
+                cell = self.puzzle_tiles[row][col]
+                state.append(cell.player.type if cell.has_player else None)
+        return state
 
     def _generate_puzzle(self):
         # define all puzzle tiles
@@ -120,11 +149,15 @@ class SortingPuzzle:
         # define moving pieces
         players = []
         id = 0
-        for color in [RED, BLUE, GREEN, YELLOW]:
-            for _ in range(4):
+        for _ in range(4):
+            for type, color in TYPE.items():
                 players.append(Player(id, color=color, x=0, y=0,
-                                      width=TILE_W, height=TILE_H))
+                                      width=TILE_W, height=TILE_H, type=type))
                 id += 1
+
+        
+        self.expected = [player.type for player in players]
+        random.shuffle(self.expected)
         random.shuffle(players)
 
         # add passages
@@ -142,12 +175,10 @@ class SortingPuzzle:
 
         # assign players to cells
         for row in range(2, HEIGHT_FACTOR-1):
-            for col in range(WIDTH_FACTOR):
-                if col % 2 != 0:
-                    continue
+            for col in range(2, WIDTH_FACTOR-1, 2):
                 cell = self.puzzle_tiles[row][col]
                 if cell.open:
-                    cell.player = players.pop()
+                    cell.player = players.pop(0)
                     cell.player.set_x(cell.x)
                     cell.player.set_y(cell.y)
 
@@ -166,7 +197,6 @@ class SortingPuzzle:
         self.walls.draw(self.screen)
         self.passage.draw(self.screen)
         self.play_tiles.draw(self.screen)
-
         pygame.display.update()
 
     def move(self, player, direction):
@@ -209,10 +239,16 @@ FPS = 60
 clock = pygame.time.Clock()
 direction = None
 player = None
+print([type for type in s._solution()])
+labels = [LABEL[type] for type in s._solution()]
+for i in range(0, len(labels), 4):
+     print(labels[i:i+4])
+
 while not done:
     clock.tick(FPS)
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or s.game_over():
+            print("WON! Good job!")
             done = True
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:  # choose random tile and random move
