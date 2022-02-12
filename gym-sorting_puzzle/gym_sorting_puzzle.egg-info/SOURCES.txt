@@ -8,3 +8,5 @@ gym_sorting_puzzle.egg-info/requires.txt
 gym_sorting_puzzle.egg-info/top_level.txt
 gym_sorting_puzzle/envs/__init__.py
 gym_sorting_puzzle/envs/foo_env.py
+gym_sorting_puzzle/envs/montesori_env.py
+gym_sorting_puzzle/envs/tiles.py
