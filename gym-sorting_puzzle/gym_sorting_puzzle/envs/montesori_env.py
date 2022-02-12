@@ -1,3 +1,5 @@
+import re
+from tkinter.messagebox import NO
 import pygame
 from pygame import Rect
 import random
@@ -122,7 +124,7 @@ class SortingPuzzle:
         self.play_tiles = pygame.sprite.Group()
         self.expected = []
         self._generate_puzzle()
-        self.draw()
+        self.update()
 
     def game_over(self):
         return self.expected == self._current_state()
@@ -137,6 +139,18 @@ class SortingPuzzle:
                 cell = self.puzzle_tiles[row][col]
                 state.append(cell.player.type if cell.has_player else None)
         return state
+
+
+    def players_states(self):
+        player_states = []
+        for row in range(2, HEIGHT_FACTOR-1):
+            for col in range(2, WIDTH_FACTOR-1, 2):
+                cell = self.puzzle_tiles[row][col]
+                if cell.has_player:
+                    player_states.append((cell.player.id, cell.player.x, cell.player.y))
+
+        return player_states
+
 
     def _generate_puzzle(self):
         # define all puzzle tiles
@@ -193,11 +207,16 @@ class SortingPuzzle:
                 else:
                     self.walls.add(tile)
 
+    def update(self, mode="human"):
+        self.draw()
+        if mode == "human":
+            pygame.display.update()
+
+
     def draw(self):
         self.walls.draw(self.screen)
         self.passage.draw(self.screen)
         self.play_tiles.draw(self.screen)
-        pygame.display.update()
 
     def move(self, player, direction):
         velocity = SPEED[direction]
@@ -233,47 +252,52 @@ class SortingPuzzle:
         return possible_moves
 
 
-s = SortingPuzzle()
-done = False
-FPS = 60
-clock = pygame.time.Clock()
-direction = None
-player = None
-print([type for type in s._solution()])
-labels = [LABEL[type] for type in s._solution()]
-for i in range(0, len(labels), 4):
-     print(labels[i:i+4])
 
-while not done:
-    clock.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or s.game_over():
-            print("WON! Good job!")
-            done = True
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:  # choose random tile and random move
-                next_move = random.choice(s.action_space())
-                player_id = next_move[0]
-                direction = random.choice(next_move[1])
-                player = [p for p in s.play_tiles if p.id == player_id]
-                player = player.pop() if len(player) > 0 else None
-            if event.key == pygame.K_w:
-                direction = 'N'
-            elif event.key == pygame.K_s:
-                direction = 'S'
-            elif event.key == pygame.K_a:
-                direction = 'W'
-            elif event.key == pygame.K_d:
-                direction = 'E'
-        elif event.type == pygame.KEYUP and player != None:
-            player.velocity[1] = 0
-            player.velocity[0] = 0
-        elif event.type == pygame.MOUSEBUTTONUP:
-            pos = pygame.mouse.get_pos()
-            player = [s for s in s.play_tiles if s.rect.collidepoint(pos)]
-            player = player.pop() if len(player) > 0 else None
+class PuzzleView:
 
-    if player and direction:
-        s.move(player, direction)
-        direction = None
-    s.draw()
+    def __init__(self) -> None:
+        self.puzzle = SortingPuzzle()
+        self._initatial_state = self.puzzle.players_states()
+        self.done = self.puzzle.game_over()
+
+
+    def update(self, mode="human") -> None:
+        try:
+            img_output = self.puzzle.update(mode)
+        except Exception as e:
+            self.done = True
+            self.quit()
+            raise e
+        else:
+            return img_output
+
+
+    def quit(self) -> None:
+        try:
+            self.done = True
+            pygame.display.quit()
+            pygame.quit()
+        except Exception:
+            pass
+
+    
+    def move(self, player, direction) -> None:
+        self.puzzle.move(player, direction)
+
+
+    def reset(self):
+        pass
+            #         state = []
+            # for row in range(2, HEIGHT_FACTOR-1):
+            #     for col in range(2, WIDTH_FACTOR-1, 2):
+            #         cell = self.puzzle_tiles[row][col]
+            #         state.append(cell.player.type if cell.has_player else None)
+            # return state
+
+    def random_move(self):
+        next_move = random.choice(self.puzzle.action_space())
+        player_id = next_move[0]
+        direction = random.choice(next_move[1])
+        player = [p for p in self.puzzle.play_tiles if p.id == player_id]
+        player = player.pop() if len(player) > 0 else None
+        return [player, direction]
