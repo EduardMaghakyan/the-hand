@@ -140,18 +140,6 @@ class SortingPuzzle:
                 state.append(cell.player.type if cell.has_player else None)
         return state
 
-
-    def players_states(self):
-        player_states = []
-        for row in range(2, HEIGHT_FACTOR-1):
-            for col in range(2, WIDTH_FACTOR-1, 2):
-                cell = self.puzzle_tiles[row][col]
-                if cell.has_player:
-                    player_states.append((cell.player.id, cell.player.x, cell.player.y))
-
-        return player_states
-
-
     def _generate_puzzle(self):
         # define all puzzle tiles
         for row in range(HEIGHT_FACTOR):
@@ -257,7 +245,7 @@ class PuzzleView:
 
     def __init__(self) -> None:
         self.puzzle = SortingPuzzle()
-        self._initatial_state = self.puzzle.players_states()
+        self._initatial_state = self.puzzle._current_state()
         self.done = self.puzzle.game_over()
 
 
@@ -286,13 +274,7 @@ class PuzzleView:
 
 
     def reset(self):
-        pass
-            #         state = []
-            # for row in range(2, HEIGHT_FACTOR-1):
-            #     for col in range(2, WIDTH_FACTOR-1, 2):
-            #         cell = self.puzzle_tiles[row][col]
-            #         state.append(cell.player.type if cell.has_player else None)
-            # return state
+        self.puzzle._current_state()
 
     def random_move(self):
         next_move = random.choice(self.puzzle.action_space())
